@@ -142,7 +142,6 @@ void loop() {
         String message = "Jemand hat dein Zimmer am " + String(timeStringBuff) + " betreten";
         sendMessage(message);
 
-        // Aktualisieren Sie die Zeit der letzten Benachrichtigung
         lastNotificationTime = currentTime;
     }
 }
