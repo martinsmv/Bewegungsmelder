@@ -14,7 +14,7 @@ const char *ssid = "";
 const char *password = "";
 
 String phoneNumber = "";
-String apiKey = "4740949";
+String apiKey = "";
 
 const int trigPin = 2;  // Trig-Pin für den Ultraschallsensor
 const int echoPin = 4;  // Echo-Pin für den Ultraschallsensor
@@ -34,26 +34,6 @@ void printLocalTime() {
 
   strftime(timeStringBuff, sizeof(timeStringBuff), "%Y-%m-%d %H:%M:%S", &timeinfo);
   Serial.println(timeStringBuff);
-}
-
-void handleRoot() {
-  // Laufzeitmessung + Distanzberechnung durchführen
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-  duration = pulseIn(echoPin, HIGH);
-  distance = duration * 0.034 / 2; // Lauzeit * Schallgeschwindigkeit(= 343m/s) / 2 um Distanz in cm zu berechnen
-
-  // HTML-Antwort senden
-  String response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
-  response += "<html><body>";
-  response += "<h1>Einparkhilfe</h1>";
-  response += "<p id=\"distance\">Distanz: " + String(distance) + " cm</p>";
-  response += "<script>setTimeout(function() { location.reload(); }, 1000);</script>";
-  response += "</body></html>";
-  client.print(response);
 }
 
 void sendMessage(String message) {
@@ -94,10 +74,6 @@ void setup() {
   }
   Serial.println("Connected to WiFi");
 
-  // Server starten
-  server.begin();
-  Serial.println("Server started");
-
   // IP-Adresse des Servers in der seriellen Konsole anzeigen
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
@@ -132,12 +108,21 @@ void loop() {
   Serial.print(distance);
   Serial.println(" cm");
 
-  if (distance <= 82) {
-    printLocalTime(); // Wenn benötigt, wieder hinzufügen
-    String message = "Jemand hat dein Zimmer am " + String(timeStringBuff) + " betreten";
-    sendMessage(message);
-    delay(10000);
-  }
+	unsigned long lastNotificationTime = 0;
+
+  if (distance <= 10) {
+    unsigned long currentTime = millis();
+
+    // Überprüfen, ob seit der letzten Benachrichtigung mindestens 10 Sekunden vergangen sind
+    if (currentTime - lastNotificationTime >= 10000) {
+        printLocalTime(); // Wenn benötigt, wieder hinzufügen
+        String message = "Jemand hat dein Zimmer am " + String(timeStringBuff) + " betreten";
+        sendMessage(message);
+
+        // Aktualisieren Sie die Zeit der letzten Benachrichtigung
+        lastNotificationTime = currentTime;
+    }
+}
 
   delay(1000);
 }
